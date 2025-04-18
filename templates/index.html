@@ -1,0 +1,944 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Handwriting Recognition</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #3498db;
+            --primary-dark: #2980b9;
+            --secondary-color: #2ecc71;
+            --secondary-dark: #27ae60;
+            --danger-color: #e74c3c;
+            --danger-dark: #c0392b;
+            --warning-color: #f39c12;
+            --text-color: #333;
+            --text-secondary: #666;
+            --bg-color: #f8f9fa;
+            --card-bg: #fff;
+            --border-color: #ddd;
+            --canvas-bg: #fff;
+            --shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .dark-theme {
+            --primary-color: #4da6ff;
+            --primary-dark: #2a80c7;
+            --secondary-color: #43d685;
+            --secondary-dark: #32a865;
+            --danger-color: #ff5a4f;
+            --danger-dark: #d9362a;
+            --warning-color: #ffad33;
+            --text-color: #e1e1e1;
+            --text-secondary: #aaa;
+            --bg-color: #121212;
+            --card-bg: #1e1e1e;
+            --border-color: #333;
+            --canvas-bg: #1e1e1e;
+            --shadow: 0 5px 15px rgba(0, 0, 0, 0.4);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: var(--text-color);
+            background-color: var(--bg-color);
+            line-height: 1.6;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            background-color: var(--card-bg);
+            padding: 15px 20px;
+            box-shadow: var(--shadow);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: relative;
+            z-index: 10;
+        }
+
+        .header h1 {
+            color: var(--primary-color);
+            font-size: 1.8rem;
+            margin: 0;
+        }
+
+        .header-controls {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .theme-toggle {
+            background: none;
+            border: none;
+            color: var(--text-color);
+            cursor: pointer;
+            font-size: 1.4rem;
+            padding: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .main-container {
+            display: flex;
+            flex: 1;
+            height: calc(100vh - 65px);
+            position: relative;
+        }
+
+        /* Side navigation panel */
+        .side-nav {
+            width: 280px;
+            background-color: var(--card-bg);
+            box-shadow: var(--shadow);
+            padding: 20px;
+            z-index: 5;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            overflow-y: auto;
+        }
+
+        .nav-section {
+            background-color: var(--bg-color);
+            border-radius: 10px;
+            padding: 15px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+
+        .section-title {
+            font-size: 1rem;
+            color: var(--primary-color);
+            font-weight: bold;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .tool-buttons {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .tool-btn {
+            width: 50px;
+            height: 50px;
+            border-radius: 10px;
+            border: 2px solid var(--border-color);
+            background-color: var(--card-bg);
+            color: var(--text-color);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.3rem;
+            transition: all 0.2s;
+        }
+
+        .tool-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .tool-btn.active {
+            background-color: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+
+        /* Brush settings section */
+        .brush-settings {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .setting-item {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .setting-label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.9rem;
+        }
+
+        .color-palette {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+        }
+
+        .color-option {
+            width: 30px;
+            height: 30px;
+            border-radius: 8px;
+            cursor: pointer;
+            border: 2px solid var(--border-color);
+            transition: transform 0.2s;
+        }
+
+        .color-option:hover {
+            transform: scale(1.1);
+        }
+
+        .color-option.selected {
+            border: 2px solid white;
+            box-shadow: 0 0 0 2px var(--primary-color);
+        }
+
+        /* History section */
+        .history-items {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+        }
+
+        .history-item {
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            background-color: var(--canvas-bg);
+            cursor: pointer;
+            overflow: hidden;
+            position: relative;
+            aspect-ratio: 1;
+        }
+
+        .history-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        .history-item .digit-badge {
+            position: absolute;
+            top: 2px;
+            right: 2px;
+            background-color: var(--primary-color);
+            color: white;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            font-size: 0.8rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        /* Canvas container */
+        #canvas-container {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            overflow: hidden;
+            padding: 20px;
+        }
+
+        #drawing-canvas {
+            background-color: var(--canvas-bg);
+            box-shadow: var(--shadow);
+            border-radius: 5px;
+            cursor: crosshair;
+        }
+
+        /* Results panel */
+        .results-panel {
+            width: 350px;
+            background-color: var(--card-bg);
+            box-shadow: var(--shadow);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            z-index: 5;
+            overflow-y: auto;
+        }
+
+        .panel-title {
+            font-size: 1.3rem;
+            color: var(--primary-color);
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .result-card {
+            background-color: var(--bg-color);
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.05);
+        }
+
+        .prediction-display {
+            font-size: 4rem;
+            font-weight: bold;
+            color: var(--primary-color);
+            margin: 20px 0;
+            min-height: 100px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .confidence-bar-container {
+            background-color: var(--border-color);
+            height: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+            overflow: hidden;
+        }
+
+        .confidence-bar {
+            height: 100%;
+            background-color: var(--secondary-color);
+            width: 0;
+            transition: width 0.5s;
+        }
+
+        .stats {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+
+        .action-button {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 5px;
+            background-color: var(--primary-color);
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .action-button:hover {
+            background-color: var(--primary-dark);
+            transform: translateY(-2px);
+        }
+
+        .action-button.secondary {
+            background-color: var(--secondary-color);
+        }
+
+        .action-button.secondary:hover {
+            background-color: var(--secondary-dark);
+        }
+
+        .action-button.danger {
+            background-color: var(--danger-color);
+        }
+
+        .action-button.danger:hover {
+            background-color: var(--danger-dark);
+        }
+
+        .buttons-row {
+            display: flex;
+            gap: 10px;
+        }
+
+        .tips-section {
+            background-color: var(--bg-color);
+            border-radius: 10px;
+            padding: 15px;
+        }
+
+        .tips-section h3 {
+            margin-bottom: 10px;
+            color: var(--primary-color);
+        }
+
+        .tips-section ul {
+            padding-left: 20px;
+            margin-bottom: 0;
+            color: var(--text-secondary);
+        }
+
+        .loader {
+            border: 5px solid var(--border-color);
+            border-top: 5px solid var(--primary-color);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 2s linear infinite;
+            margin: 20px auto;
+            display: none;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Mobile responsive styles */
+        @media (max-width: 1200px) {
+            .main-container {
+                flex-direction: column;
+                height: auto;
+            }
+            
+            .side-nav, .results-panel {
+                width: 100%;
+                max-height: 300px;
+            }
+            
+            #canvas-container {
+                flex: 0 0 500px;
+                height: 500px;
+            }
+            
+            .history-items {
+                grid-template-columns: repeat(4, 1fr);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .side-nav, .results-panel {
+                max-height: 250px;
+            }
+            
+            #canvas-container {
+                flex: 0 0 400px;
+                height: 400px;
+            }
+            
+            .buttons-row {
+                flex-direction: column;
+            }
+            
+            .history-items {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+
+        @media (max-width: 480px) {
+            .header {
+                flex-direction: column;
+                gap: 10px;
+                text-align: center;
+            }
+            
+            #canvas-container {
+                flex: 0 0 300px;
+                height: 300px;
+            }
+            
+            .tool-btn {
+                width: 45px;
+                height: 45px;
+            }
+            
+            .history-items {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Handwriting Recognition</h1>
+        <div class="header-controls">
+            <button id="theme-toggle" class="theme-toggle" title="Toggle dark/light mode">
+                <i class="fas fa-moon"></i>
+            </button>
+        </div>
+    </div>
+
+    <div class="main-container">
+        <div class="side-nav">
+            <!-- Drawing Tools Section -->
+            <div class="nav-section">
+                <div class="section-title">
+                    <i class="fas fa-pen-fancy"></i> Drawing Tools
+                </div>
+                <div class="tool-buttons">
+                    <button id="brush-tool" class="tool-btn active" title="Brush tool">
+                        <i class="fas fa-pen"></i>
+                    </button>
+                    <button id="eraser-tool" class="tool-btn" title="Eraser tool">
+                        <i class="fas fa-eraser"></i>
+                    </button>
+                    <button id="undo-btn" class="tool-btn" title="Undo" disabled>
+                        <i class="fas fa-undo"></i>
+                    </button>
+                    <button id="clear-btn" class="tool-btn" title="Clear canvas">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Brush Settings Section -->
+            <div class="nav-section">
+                <div class="section-title">
+                    <i class="fas fa-sliders-h"></i> Brush Settings
+                </div>
+                <div class="brush-settings">
+                    <div class="setting-item">
+                        <div class="setting-label">
+                            <span>Thickness:</span>
+                            <span id="thickness-value">10px</span>
+                        </div>
+                        <input type="range" id="thickness-slider" min="1" max="50" value="10">
+                    </div>
+                    
+                    <div class="setting-item">
+                        <div class="setting-label">
+                            <span>Color:</span>
+                        </div>
+                        <div class="color-palette">
+                            <div class="color-option selected" data-color="#000000" style="background-color: #000000;"></div>
+                            <div class="color-option" data-color="#e74c3c" style="background-color: #e74c3c;"></div>
+                            <div class="color-option" data-color="#3498db" style="background-color: #3498db;"></div>
+                            <div class="color-option" data-color="#2ecc71" style="background-color: #2ecc71;"></div>
+                            <div class="color-option" data-color="#f1c40f" style="background-color: #f1c40f;"></div>
+                            <div class="color-option" data-color="#9b59b6" style="background-color: #9b59b6;"></div>
+                            <div class="color-option" data-color="#e67e22" style="background-color: #e67e22;"></div>
+                            <div class="color-option" data-color="#1abc9c" style="background-color: #1abc9c;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Recognition History Section -->
+            <div class="nav-section">
+                <div class="section-title">
+                    <i class="fas fa-history"></i> Recognition History
+                </div>
+                <div id="history-items" class="history-items">
+                    <!-- History items will be added here dynamically -->
+                </div>
+            </div>
+        </div>
+
+        <div id="canvas-container">
+            <canvas id="drawing-canvas" width="500" height="500"></canvas>
+        </div>
+
+        <div class="results-panel">
+            <h2 class="panel-title">Recognition Results</h2>
+            
+            <div class="result-card">
+                <div id="prediction-display" class="prediction-display">Draw a digit</div>
+                <div class="confidence-bar-container">
+                    <div id="confidence-bar" class="confidence-bar"></div>
+                </div>
+                <div class="stats">
+                    <div id="confidence-value">Confidence: -</div>
+                    <div id="processing-time">Time: -</div>
+                </div>
+            </div>
+            
+            <div class="buttons-row">
+                <button id="recognize-btn" class="action-button">
+                    <i class="fas fa-search"></i> Recognize
+                </button>
+                <button id="save-btn" class="action-button secondary">
+                    <i class="fas fa-save"></i> Save
+                </button>
+            </div>
+            
+            <div id="loader" class="loader"></div>
+            
+            <div class="tips-section">
+                <h3>Tips for Best Results</h3>
+                <ul>
+                    <li>Draw a single digit (0-9) only</li>
+                    <li>Draw the digit large and centered</li>
+                    <li>Use thick, clear lines</li>
+                    <li>Write naturally, as you would on paper</li>
+                    <li>Avoid connecting the digit to the edges</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Canvas setup
+            const canvas = document.getElementById('drawing-canvas');
+            const ctx = canvas.getContext('2d');
+            
+            // Set initial canvas background
+            resetCanvas();
+            
+            // UI elements
+            const recognizeBtn = document.getElementById('recognize-btn');
+            const clearBtn = document.getElementById('clear-btn');
+            const saveBtn = document.getElementById('save-btn');
+            const undoBtn = document.getElementById('undo-btn');
+            const brushTool = document.getElementById('brush-tool');
+            const eraserTool = document.getElementById('eraser-tool');
+            const thicknessSlider = document.getElementById('thickness-slider');
+            const thicknessValue = document.getElementById('thickness-value');
+            const colorOptions = document.querySelectorAll('.color-option');
+            const themeToggle = document.getElementById('theme-toggle');
+            const predictionDisplay = document.getElementById('prediction-display');
+            const confidenceBar = document.getElementById('confidence-bar');
+            const confidenceValue = document.getElementById('confidence-value');
+            const processingTime = document.getElementById('processing-time');
+            const loader = document.getElementById('loader');
+            const historyItems = document.getElementById('history-items');
+            
+            // Drawing state
+            let isDrawing = false;
+            let lastX = 0;
+            let lastY = 0;
+            let selectedTool = 'brush';
+            let currentColor = '#000000';
+            let currentThickness = 10;
+            let drawingHistory = [];
+            let historyIndex = -1;
+            
+            // Initialize the first state
+            saveState();
+            
+            // Theme handling
+            themeToggle.addEventListener('click', function() {
+                document.body.classList.toggle('dark-theme');
+                
+                const icon = themeToggle.querySelector('i');
+                if (document.body.classList.contains('dark-theme')) {
+                    icon.classList.remove('fa-moon');
+                    icon.classList.add('fa-sun');
+                } else {
+                    icon.classList.remove('fa-sun');
+                    icon.classList.add('fa-moon');
+                }
+                
+                // Update canvas background based on theme
+                resetCanvas();
+            });
+            
+            // Tool selection
+            brushTool.addEventListener('click', function() {
+                setActiveTool('brush');
+            });
+            
+            eraserTool.addEventListener('click', function() {
+                setActiveTool('eraser');
+            });
+            
+            function setActiveTool(tool) {
+                selectedTool = tool;
+                
+                // Update button states
+                brushTool.classList.toggle('active', tool === 'brush');
+                eraserTool.classList.toggle('active', tool === 'eraser');
+            }
+            
+            // Thickness control
+            thicknessSlider.addEventListener('input', function() {
+                currentThickness = parseInt(this.value);
+                thicknessValue.textContent = currentThickness + 'px';
+            });
+            
+            // Color selection
+            colorOptions.forEach(option => {
+                option.addEventListener('click', function() {
+                    // Update selected color
+                    currentColor = this.dataset.color;
+                    
+                    // Update UI
+                    colorOptions.forEach(opt => opt.classList.remove('selected'));
+                    this.classList.add('selected');
+                    
+                    // Switch to brush tool when color is selected
+                    setActiveTool('brush');
+                });
+            });
+            
+            // Canvas history (for undo)
+            function saveState() {
+                // Limit history size
+                if (historyIndex < drawingHistory.length - 1) {
+                    drawingHistory = drawingHistory.slice(0, historyIndex + 1);
+                }
+                
+                // Save current state
+                drawingHistory.push(canvas.toDataURL());
+                historyIndex = drawingHistory.length - 1;
+                
+                // Update undo button state
+                undoBtn.disabled = historyIndex <= 0;
+            }
+            
+            // Drawing event listeners
+            canvas.addEventListener('mousedown', startDrawing);
+            canvas.addEventListener('mousemove', draw);
+            canvas.addEventListener('mouseup', stopDrawing);
+            canvas.addEventListener('mouseout', stopDrawing);
+            
+            // Touch support for mobile devices
+            canvas.addEventListener('touchstart', handleTouch);
+            canvas.addEventListener('touchmove', handleTouchMove);
+            canvas.addEventListener('touchend', stopDrawing);
+            
+            // Button event listeners
+            recognizeBtn.addEventListener('click', recognizeDigit);
+            clearBtn.addEventListener('click', clearCanvas);
+            saveBtn.addEventListener('click', saveDrawing);
+            undoBtn.addEventListener('click', undoLastAction);
+            
+            function startDrawing(e) {
+                isDrawing = true;
+                [lastX, lastY] = getPointerPosition(e);
+            }
+            
+            function getPointerPosition(e) {
+                const rect = canvas.getBoundingClientRect();
+                if (e.type.includes('touch')) {
+                    return [
+                        e.touches[0].clientX - rect.left,
+                        e.touches[0].clientY - rect.top
+                    ];
+                } else {
+                    return [
+                        e.clientX - rect.left,
+                        e.clientY - rect.top
+                    ];
+                }
+            }
+            
+            function draw(e) {
+                if (!isDrawing) return;
+                
+                const [currentX, currentY] = getPointerPosition(e);
+                
+                ctx.beginPath();
+                ctx.moveTo(lastX, lastY);
+                ctx.lineTo(currentX, currentY);
+                
+                if (selectedTool === 'eraser') {
+                    // Create composite operation for eraser
+                    ctx.globalCompositeOperation = 'destination-out';
+                    ctx.strokeStyle = 'rgba(0,0,0,1)';
+                } else {
+                    ctx.globalCompositeOperation = 'source-over';
+                    ctx.strokeStyle = currentColor;
+                }
+                
+                ctx.lineWidth = currentThickness;
+                ctx.lineCap = 'round';
+                ctx.lineJoin = 'round';
+                ctx.stroke();
+                
+                [lastX, lastY] = [currentX, currentY];
+            }
+            
+            function handleTouch(e) {
+                e.preventDefault();
+                startDrawing(e);
+            }
+            
+            function handleTouchMove(e) {
+                e.preventDefault();
+                draw(e);
+            }
+            
+            function stopDrawing() {
+                if (isDrawing) {
+                    isDrawing = false;
+                    saveState();
+                }
+            }
+            
+            function resetCanvas() {
+                const isDarkTheme = document.body.classList.contains('dark-theme');
+                ctx.fillStyle = isDarkTheme ? '#1e1e1e' : '#ffffff';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                
+                // Reset global composite operation
+                ctx.globalCompositeOperation = 'source-over';
+            }
+            
+            function clearCanvas() {
+                resetCanvas();
+                saveState();
+                
+                // Reset the prediction display
+                predictionDisplay.textContent = 'Draw a digit';
+                confidenceBar.style.width = '0%';
+                confidenceValue.textContent = 'Confidence: -';
+                processingTime.textContent = 'Time: -';
+            }
+            
+            function undoLastAction() {
+                if (historyIndex > 0) {
+                    historyIndex--;
+                    const img = new Image();
+                    img.onload = function() {
+                        resetCanvas();
+                        ctx.drawImage(img, 0, 0);
+                    };
+                    img.src = drawingHistory[historyIndex];
+                    
+                    // Update undo button state
+                    undoBtn.disabled = historyIndex <= 0;
+                }
+            }
+            
+            function saveDrawing() {
+                const dataURL = canvas.toDataURL('image/png');
+                const a = document.createElement('a');
+                a.href = dataURL;
+                a.download = 'handwritten-digit.png';
+                a.click();
+            }
+            
+            function recognizeDigit() {
+                // Show loader
+                loader.style.display = 'block';
+                predictionDisplay.textContent = 'Recognizing...';
+                confidenceBar.style.width = '0%';
+                confidenceValue.textContent = 'Confidence: -';
+                processingTime.textContent = 'Time: -';
+                
+                // Convert canvas to base64 image
+                const imageData = canvas.toDataURL('image/png');
+                
+                // Send image to API
+                fetch('/predict', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        image: imageData
+                    })
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    // Hide loader
+                    loader.style.display = 'none';
+                    
+                    // Display result
+                    if (data.digit === 'Unknown') {
+                        predictionDisplay.textContent = '?';
+                        confidenceBar.style.width = '0%';
+                        confidenceValue.textContent = 'Could not detect a digit';
+                    } else {
+                        predictionDisplay.textContent = data.digit;
+                        const confidencePercent = (data.confidence * 100).toFixed(2);
+                        confidenceBar.style.width = confidencePercent + '%';
+                        confidenceValue.textContent = `Confidence: ${confidencePercent}%`;
+                    }
+                    
+                    if (data.processing_time) {
+                        const timeMs = (data.processing_time * 1000).toFixed(0);
+                        processingTime.textContent = `Time: ${timeMs} ms`;
+                    }
+                    
+                    // Add to history if it's a valid digit
+                    if (data.digit !== 'Unknown') {
+                        addToHistory(imageData, data.digit);
+                    }
+                })
+                .catch(error => {
+                    // Hide loader
+                    loader.style.display = 'none';
+                    
+                    // Display error
+                    predictionDisplay.textContent = 'Error';
+                    confidenceValue.textContent = error.message;
+                    console.error('Error:', error);
+                });
+            }
+            
+            function addToHistory(imageData, digit) {
+                // Create history item
+                const historyItem = document.createElement('div');
+                historyItem.className = 'history-item';
+                
+                // Add thumbnail
+                const img = document.createElement('img');
+                img.src = imageData;
+                historyItem.appendChild(img);
+                
+                // Add digit badge
+                const badge = document.createElement('div');
+                badge.className = 'digit-badge';
+                badge.textContent = digit;
+                historyItem.appendChild(badge);
+                
+                // Add click event to restore this drawing
+                historyItem.addEventListener('click', function() {
+                    const restoreImg = new Image();
+                    restoreImg.onload = function() {
+                        resetCanvas();
+                        ctx.drawImage(restoreImg, 0, 0);
+                        saveState();
+                    };
+                    restoreImg.src = imageData;
+                });
+                
+                // Add to history container (max 9 items)
+                if (historyItems.children.length >= 9) {
+                    historyItems.removeChild(historyItems.firstChild);
+                }
+                historyItems.appendChild(historyItem);
+            }
+            
+            // Resize canvas to fill container
+            function resizeCanvas() {
+                const container = document.getElementById('canvas-container');
+                const containerWidth = container.clientWidth;
+                const containerHeight = container.clientHeight;
+                
+                // Calculate size while maintaining aspect ratio
+                const size = Math.min(containerWidth, containerHeight) - 40;
+                
+                // Update canvas size
+                canvas.width = size;
+                canvas.height = size;
+                
+                // Redraw canvas content
+                if (drawingHistory.length > 0) {
+                    const img = new Image();
+                    img.onload = function() {
+                        resetCanvas();
+                        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                    };
+                    img.src = drawingHistory[historyIndex];
+                } else {
+                    resetCanvas();
+                }
+            }
+            
+            // Initial resize and add window resize listener
+            resizeCanvas();
+            window.addEventListener('resize', resizeCanvas);
+        });
+    </script>
+</body>
+</html>
