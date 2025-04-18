@@ -1,0 +1,5 @@
+flask
+easyocr
+pillow
+numpy
+opencv-python
