@@ -57,3 +57,6 @@ python app.py
 Open your browser and navigate to : http://127.0.0.1:5000
 
 ## 🔭 Project Outlook
+
+![Image](https://github.com/user-attachments/assets/9e81e3f1-fe46-4a8a-aa97-5913cefb9d32)
+![Image](https://github.com/user-attachments/assets/e257ddd0-7991-4ba3-b927-7b01aac93d59)
